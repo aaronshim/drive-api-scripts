@@ -1,3 +1,8 @@
+# Script-specific files.
+client_id.json
+storage.json
+md5dedup.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
