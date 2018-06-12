@@ -4,6 +4,8 @@ from apiclient import discovery, errors
 from httplib2 import Http
 from oauth2client import file, client, tools
 
+import json
+
 # Set up auth for the API
 #SCOPES = 'https://www.googleapis.com/auth/drive.readonly.metadata'
 SCOPES = 'https://www.googleapis.com/auth/drive'
@@ -45,6 +47,12 @@ while has_next:
     else:
         has_next = False
 print("%d files found." % len(files_found))
+
+# Optionally save Drive ID's into a file.
+save = input('File name? ')
+if save and save != '':
+    with open(save + '.json', 'w') as outfile:
+        json.dump([f['id'] for f in files_found], outfile)
 
 # Now optionally delete the ones that are found.
 delete = input('Delete? ')
