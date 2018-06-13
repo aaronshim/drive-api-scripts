@@ -3,7 +3,7 @@ client_id.json
 storage.json
 md5dedup.json
 files_to_copy.json
-drive_copy_status.json
+drive_copy_status*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
