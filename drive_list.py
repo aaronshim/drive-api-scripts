@@ -27,12 +27,14 @@ else:
 # Query! (While chasing the next page tokens.)
 has_next = True
 files_found = []
+total_size = 0
 request = DRIVE.files().list(pageSize=max_results, q=list_query, fields='*') 
 response = request.execute()
 while has_next:
     files = response.get('files', [])
     for f in files:
         if 'size' in f and 'md5Checksum' in f:
+            total_size += int(f['size'])
             print(f['name'], f['mimeType'], f['size'], f['id'], f['md5Checksum'])
         else:
             print(f['name'], f['mimeType'], f['id'])
@@ -47,6 +49,7 @@ while has_next:
     else:
         has_next = False
 print("%d files found." % len(files_found))
+print("%d bytes total" % total_size)
 
 # Optionally save Drive ID's into a file.
 save = input('File name? ')
