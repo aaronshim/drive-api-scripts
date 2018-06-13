@@ -27,6 +27,7 @@ else:
 # Query! (While chasing the next page tokens.)
 has_next = True
 files_found = []
+owners_found = {}
 total_size = 0
 request = DRIVE.files().list(pageSize=max_results, q=list_query, fields='*') 
 response = request.execute()
@@ -38,6 +39,12 @@ while has_next:
             print(f['name'], f['mimeType'], f['size'], f['id'], f['md5Checksum'])
         else:
             print(f['name'], f['mimeType'], f['id'])
+        # Keep track of owners
+        for owner in f['owners']:
+            if not owner['emailAddress'] in owners_found:
+                owners_found[owner['emailAddress']] = 1
+            else:
+                owners_found[owner['emailAddress']] += 1
         # Know when to stop showing results.
         files_found.append(f)
         if max_results and len(files_found) >= max_results:
@@ -50,6 +57,7 @@ while has_next:
         has_next = False
 print("%d files found." % len(files_found))
 print("%d bytes total" % total_size)
+print("Number of items per owner: %s" % owners_found)
 
 # Optionally save Drive ID's into a file.
 save = input('File name? ')
