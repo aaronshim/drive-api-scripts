@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import threading
+import time
 
 # Set logging
 logger = logging.getLogger('drive_download')
@@ -126,13 +127,42 @@ def get_files_in_directory(drive_service, drive_id):
             has_next = False
 
 
+def take_care_of_threads(threads):
+    """
+    Makes sure 10 threads are running at a time.
+    """
+    running_threads = set(threading.enumerate())
+    running_threads_in_queue = []
+    not_started_in_queue = []
+    for t in threads:
+        if t in running_threads:
+            running_threads_in_queue.append(t)
+        elif t.ident is None:  # Not started yet.
+            not_started_in_queue.append(t)
+    for t in not_started_in_queue[:11 - len(running_threads)]:
+        logger.debug("Starting download thread for %s" % t.name)
+        t.start()
+
+
+def safe_mkdir(path):
+    """
+    mkdir that only runs if the directory doesn't exist.
+    """
+    if Path(path).is_file():
+        logger.fatal("Cannot mkdir to %s where a file already exists!" % path)
+        exit(1)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
 # Figure out directory to start iterating from.
 directory_to_start = input('ID of directory to download: ')
 if directory_to_start == None or directory_to_start == '':
     directory_to_start = 'root'
-directory_queue = [(directory_to_start, 'root')]
+directory_to_save = input('Path of directory to save to: ')
+directory_queue = [(directory_to_start, directory_to_save)]
 
-os.mkdir('root')
+safe_mkdir(directory_queue[0][1])
 
 # Breadth-first trasversal of our directory structure.
 download_threads = []
@@ -145,20 +175,23 @@ while len(directory_queue) > 0:
             # It's a folder.
             directory_queue.append((f['id'], item_path))
             logger.debug("Making directory %s" % item_path)
-            os.mkdir(item_path)
+            safe_mkdir(item_path)
         else:
             # It's a file. Try to download it?
-            logger.debug("Downloading file %s with ID %s to %s" %
+            logger.debug("Queing download of file %s with ID %s to %s" %
                          (f['name'], f['id'], item_path))
             thread = threading.Thread(target=copy_file, args=(
-                f['id'], item_path), name=f['id'])
+                f['id'], item_path), name=f['name'])
             download_threads.append(thread)
-            thread.start()
+            # Basic thread manager.
+            take_care_of_threads(download_threads)
 
 # Wait for all downloads to finish.
-for thread in download_threads:
-    logger.debug("Waiting for download of %s to finish." % thread.name)
-    thread.join()
-    logger.debug("Download of %s finished." % thread.name)
+live_threads = [t for t in download_threads if t.is_alive()]
+while len(live_threads) > 0:
+    logger.debug("Still running %s threads." % len(live_threads))
+    take_care_of_threads(download_threads)
+    time.sleep(1)
+    live_threads = [t for t in download_threads if t.is_alive()]
 
 logger.info('=======================FINISHED=======================')
