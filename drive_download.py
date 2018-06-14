@@ -87,7 +87,8 @@ def check_copied_file(drive_service, drive_id, location):
     # Compute hash and file size of file on disk.
     m = hashlib.md5()
     with open(location, 'rb') as file:
-        m.update(file.read())
+        for chunk in iter(lambda: file.read(131072), b""):
+            m.update(chunk)
     disk_md5 = m.hexdigest()
     disk_size = os.path.getsize(location)
     # Compare.
