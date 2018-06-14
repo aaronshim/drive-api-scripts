@@ -1,4 +1,5 @@
 # Script-specific files.
+.vscode
 client_id.json
 storage.json
 md5dedup.json
